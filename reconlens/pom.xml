@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.reconlens</groupId>
+    <artifactId>reconlens</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>ReconLens</name>
+    <description>
+        A Burp Suite (Montoya API) extension that explains captured HTTP requests in
+        plain English, highlights parameters worth a closer look, suggests candidate
+        vulnerability classes to test for, and groups near-duplicate endpoints so a
+        few thousand proxy history rows collapse into a short, prioritized worklist.
+    </description>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Bump this when PortSwigger ships a newer Montoya release; check
+             https://mvnrepository.com/artifact/net.portswigger.burp.extensions/montoya-api -->
+        <montoya.version>2026.4</montoya.version>
+        <junit.version>5.10.2</junit.version>
+    </properties>
+
+    <dependencies>
+        <!--
+          Compile-time only. Burp itself puts the real implementation on the
+          classpath when it loads the extension, so this must NOT be shaded
+          into the jar (scope=provided keeps it out of any fat jar we build).
+        -->
+        <dependency>
+            <groupId>net.portswigger.burp.extensions</groupId>
+            <artifactId>montoya-api</artifactId>
+            <version>${montoya.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>reconlens</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!--
+          ReconLens itself has zero runtime dependencies (see README - "Why no
+          JSON library"), so plain `mvn package` already produces a jar Burp
+          can load directly. This profile exists so that the moment YOU add a
+          real dependency for your own fork, you have a working fat-jar recipe
+          ready to go: `mvn package -Pfatjar`. Burp only puts montoya-api on
+          the classpath, nothing else, so any other dependency must be bundled.
+        -->
+        <profile>
+            <id>fatjar</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.5.3</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals><goal>shade</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
